@@ -23,8 +23,8 @@ OU_Cover = []
 games = []
 days_rest_away = []
 days_rest_home = []
-teams_con = sqlite3.connect("../../Data/teams.sqlite")
-odds_con = sqlite3.connect("../../Data/odds.sqlite")
+teams_con = sqlite3.connect("Data/teams.sqlite")
+odds_con = sqlite3.connect("Data/odds.sqlite")
 
 for season in tqdm(season_array):
     odds_df = pd.read_sql_query(f"select * from \"odds_{season}\"", odds_con, index_col="index")
