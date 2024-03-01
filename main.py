@@ -6,7 +6,7 @@ import tensorflow as tf
 from colorama import Fore, Style
 
 from src.DataProviders.SbrOddsProvider import SbrOddsProvider
-from src.Predict import NN_Runner, XGBoost_Runner
+from src.Predict import NN_Runner, XGBoost_Runner, get_injuries, get_pie
 from src.Utils.Dictionaries import team_index_current
 from src.Utils.tools import create_todays_games_from_odds, get_json_data, to_data_frame, get_todays_games_json, create_todays_games
 
@@ -108,6 +108,15 @@ def main():
         games = create_todays_games(data)
     data = get_json_data(data_url)
     df = to_data_frame(data)
+
+    df['PIE'] = 0
+    df['PIE_W'] = 0
+    injury_list = get_injuries.get_injuries()
+    for i in df.index:
+        pie, pie_w = get_pie.get_pie(df['TEAM_NAME'][i], injury_list)
+        df['PIE'][i] = pie
+        df['PIE_W'][i] = pie_w
+
     print(df.to_string())
     data, todays_games_uo, frame_ml, home_team_odds, away_team_odds = createTodaysGames(games, df, odds)
     if args.nn:
