@@ -8,7 +8,7 @@ from sklearn.model_selection import train_test_split
 from tqdm import tqdm
 
 dataset = "dataset_2012-24"
-con = sqlite3.connect("../../Data/dataset.sqlite")
+con = sqlite3.connect("Data/dataset.sqlite")
 data = pd.read_sql_query(f"select * from \"{dataset}\"", con, index_col="index")
 con.close()
 
