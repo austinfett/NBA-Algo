@@ -6,9 +6,9 @@ import tensorflow as tf
 from colorama import Fore, Style
 
 from src.DataProviders.SbrOddsProvider import SbrOddsProvider
-from src.Predict import NN_Runner, XGBoost_Runner, get_injuries, get_pie
+from src.Predict import NN_Runner, XGBoost_Runner
 from src.Utils.Dictionaries import team_index_current
-from src.Utils.tools import create_todays_games_from_odds, get_json_data, to_data_frame, get_todays_games_json, create_todays_games
+from src.Utils.tools import create_todays_games_from_odds, get_json_data, to_data_frame, get_todays_games_json, create_todays_games, get_injuries, get_pie
 
 todays_games_url = 'https://data.nba.com/data/10s/v2015/json/mobile_teams/nba/2023/scores/00_todays_scores.json'
 data_url = 'https://stats.nba.com/stats/leaguedashteamstats?' \
@@ -111,9 +111,9 @@ def main():
 
     df['PIE'] = 0
     df['PIE_W'] = 0
-    injury_list = get_injuries.get_injuries()
+    injury_list = get_injuries()
     for i in df.index:
-        pie, pie_w = get_pie.get_pie(df['TEAM_NAME'][i], injury_list)
+        pie, pie_w = get_pie(df['TEAM_NAME'][i], injury_list)
         df['PIE'][i] = pie
         df['PIE_W'][i] = pie_w
 
