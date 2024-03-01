@@ -109,13 +109,13 @@ def main():
     data = get_json_data(data_url)
     df = to_data_frame(data)
 
-    df['PIE'] = 0
-    df['PIE_W'] = 0
+    df['PIE'] = 0.0
+    df['PIE_W'] = 0.0
     injury_list = get_injuries()
     for i in df.index:
         pie, pie_w = get_pie(df['TEAM_NAME'][i], injury_list)
-        df['PIE'][i] = pie
-        df['PIE_W'][i] = pie_w
+        df['PIE'][i] = round(pie, 1)
+        df['PIE_W'][i] = round(pie_w, 1)
 
     print(df.to_string())
     data, todays_games_uo, frame_ml, home_team_odds, away_team_odds = createTodaysGames(games, df, odds)
