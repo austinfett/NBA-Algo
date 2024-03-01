@@ -1,4 +1,3 @@
-from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -73,26 +72,26 @@ def get_injuries():
     try:
         driver = webdriver.Chrome(options=options)
         driver.get(URL)
-        wait = WebDriverWait(driver, 8).until(EC.presence_of_element_located((By.CLASS_NAME, 'Card')))
+        WebDriverWait(driver, 8).until(EC.presence_of_element_located((By.CLASS_NAME, 'Card')))
     except TimeoutException:
         try:
             driver.refresh()
-            wait = WebDriverWait(driver, 8).until(EC.presence_of_element_located((By.CLASS_NAME, 'Card')))
+            WebDriverWait(driver, 8).until(EC.presence_of_element_located((By.CLASS_NAME, 'Card')))
         except TimeoutException:
             driver.quit()
+            return []
         except WebDriverException:
             driver.quit()
+            return []
         except MaxRetryError:
             driver.quit()
+            return []
     except WebDriverException:
         driver.quit()
+        return []
 
-    driver.execute_script('window.stop();')
-    soup = BeautifulSoup(driver.page_source, 'html.parser')
+    teams = driver.find_elements(By.CLASS_NAME, 'Table__TR Table__TR--sm Table__even')
     driver.quit()
-
-    results = soup.find(class_="Card")
-    teams = results.find_all(class_="Table__TR Table__TR--sm Table__even")
 
     injury_list = []
 
