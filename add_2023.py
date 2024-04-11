@@ -7,6 +7,7 @@ from sbrscrape import Scoreboard
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
+from datetime import datetime
 
 team_dict = {
     "Boston Celtics" : "1610612738",
@@ -84,16 +85,28 @@ month_dict_leap = {
     12 : 31
 }
 
-def add_games():
-    year = start_date[0]
-    month = start_date[1]
-    day = start_date[2]
-    curr_day = f'{year}-{str(month).zfill(2)}-{str(day).zfill(2)}'
-
+def add_games(init=False):
     con = sqlite3.connect('Data/dataset.sqlite')
     cur = con.cursor()
+    dataset = con.cursor()
 
-    while curr_day != f'{end_date[0]}-{str(end_date[1]).zfill(2)}-{str(end_date[2]).zfill(2)}':
+    if init:
+        year = start_date[0]
+        month = start_date[1]
+        day = start_date[2]
+        curr_day = f'{year}-{str(month).zfill(2)}-{str(day).zfill(2)}'
+        end_day = f'{end_date[0]}-{str(end_date[1]).zfill(2)}-{str(end_date[2]).zfill(2)}'
+    else:
+        for last_row in dataset.execute(f"""SELECT `Date` FROM `dataset_2023-24` ORDER BY `index` DESC LIMIT 1"""):
+            curr_day = last_row[0]
+            year = int(curr_day.split('-')[0])
+            month = int(curr_day.split('-')[1])
+            day = int(curr_day.split('-')[2]) + 1
+            curr_day = f'{year}-{str(month).zfill(2)}-{str(day).zfill(2)}'
+            end_day = datetime.today().strftime('%Y-%m-%d')
+            break
+
+    while curr_day != end_day:
         try:
             games = Scoreboard(sport='NBA', date=(curr_day)).games
 
@@ -116,20 +129,32 @@ def add_games():
             day += 1
         curr_day = f'{year}-{str(month).zfill(2)}-{str(day).zfill(2)}'
 
+    dataset.close()
     cur.close()
     con.close()
 
-def add_covered():
+def add_covered(init=False):
     sportsbook = 'fanduel'
-    year = start_date[0]
-    month = start_date[1]
-    day = start_date[2]
-    curr_day = f'{year}-{str(month).zfill(2)}-{str(day).zfill(2)}'
-
     con = sqlite3.connect('Data/dataset.sqlite')
     cur = con.cursor()
+    dataset = con.cursor()
 
-    while curr_day != f'{end_date[0]}-{str(end_date[1]).zfill(2)}-{str(end_date[2]).zfill(2)}':
+    if init:
+        year = start_date[0]
+        month = start_date[1]
+        day = start_date[2]
+        curr_day = f'{year}-{str(month).zfill(2)}-{str(day).zfill(2)}'
+        end_day = f'{end_date[0]}-{str(end_date[1]).zfill(2)}-{str(end_date[2]).zfill(2)}'
+    else:
+        for last_row in dataset.execute(f"""SELECT `Date` FROM `dataset_2023-24` ORDER BY `index` DESC LIMIT 1"""):
+            curr_day = last_row[0]
+            year = int(curr_day.split('-')[0])
+            month = int(curr_day.split('-')[1])
+            day = int(curr_day.split('-')[2])
+            end_day = datetime.today().strftime('%Y-%m-%d')
+            break
+
+    while curr_day != end_day:
         try:
             games = Scoreboard(sport='NBA', date=(curr_day)).games
 
@@ -175,6 +200,7 @@ def add_covered():
             day += 1
         curr_day = f'{year}-{str(month).zfill(2)}-{str(day).zfill(2)}'
 
+    dataset.close()
     cur.close()
     con.close()
 
