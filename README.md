@@ -1,7 +1,9 @@
 # NBA Sports Betting Using Machine Learning 🏀
 <img src="https://github.com/kyleskom/NBA-Machine-Learning-Sports-Betting/blob/master/Screenshots/output.png" width="1010" height="292" />
 
-A machine learning AI used to predict the winners and under/overs of NBA games. Takes all team data from the 2007-08 season to current season, matched with odds of those games, using a neural network to predict winning bets for today's games. Achieves ~69% accuracy on money lines and ~55% on under/overs. Outputs expected value for teams money lines to provide better insight. The fraction of your bankroll to bet based on the Kelly Criterion is also outputted. Note that a popular, less risky approach is to bet 50% of the stake recommended by the Kelly Criterion.
+A machine learning AI used to predict the winners, over/unders, and spreads of NBA games. Takes all team data from the 2012-13 season to current season, matched with odds of those games, using a neural network to predict winning bets for today's games. Achieves ~70% training accuracy on money lines, ~55% on over/unders, and ~63% on spreads. Outputs expected value for teams money lines to provide better insight. The fraction of your bankroll to bet based on the Kelly Criterion is also outputted. Note that a popular, less risky approach is to bet 50% of the stake recommended by the Kelly Criterion.
+
+This is heavily adapted from kyleskom's project (https://github.com/kyleskom/NBA-Machine-Learning-Sports-Betting) and expanded upon using more player focused data to account for injuries. These stats are pie, a weighted pie for each player, and total minutes for these players.
 ## Packages Used
 
 Use Python 3.11. In particular the packages/libraries used are...
@@ -22,8 +24,8 @@ Use Python 3.11. In particular the packages/libraries used are...
 Make sure all packages above are installed.
 
 ```bash
-$ git clone https://github.com/kyleskom/NBA-Machine-Learning-Sports-Betting.git
-$ cd NBA-Machine-Learning-Sports-Betting
+$ git clone https://github.com/austinfett/NBA-Algo.git
+$ cd NBA-Algo
 $ pip3 install -r requirements.txt
 $ python3 main.py -xgb -odds=fanduel
 ```

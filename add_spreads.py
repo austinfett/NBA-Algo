@@ -48,22 +48,20 @@ def add_spreads():
     # count = 1
     not_found = 0
 
-    for row in dataset.execute("""SELECT `Date`, `TEAM_NAME`, `TEAM_NAME.1`, `Spread`, `Spread-Cover`, `Home_Points`, `Away_Points` FROM `dataset_2012-23`"""):
+    for row in dataset.execute("""SELECT `Date`, `TEAM_NAME`, `TEAM_NAME.1`, `Spread`, `Spread-Cover` FROM `dataset_2012-23`"""):
         if row[3] != None and row[4] != None : continue
 
-        if int(row[0].split('-')[0]) < 2022:
-            not_found += 1
-            continue
+        # if int(row[0].split('-')[0]) < 2022:
+        #     not_found += 1
+        #     continue
 
-        if row[3] != None and row[5] != None and row[6] != None:
-            diff = row[6] - row[5]
-            covered = 1.0 if diff < row[3] else 0.0 if diff > row[3] else 2.0
+        home, away, line = get_game(spread_data, row[0], row[1], row[2])
 
-            # cur.execute(f"""UPDATE `dataset_2012-24` SET `Home_Points` = '{home}' WHERE `Date` = '{row[0]}' AND `TEAM_NAME` = '{row[1]}'""")
-            # cur.execute(f"""UPDATE `dataset_2012-24` SET `Away_Points` = '{away}' WHERE `Date` = '{row[0]}' AND `TEAM_NAME` = '{row[1]}'""")
-            # cur.execute(f"""UPDATE `dataset_2012-24` SET `Spread` = '{line}' WHERE `Date` = '{row[0]}' AND `TEAM_NAME` = '{row[1]}'""")
-            cur.execute(f"""UPDATE `dataset_2012-24` SET `Spread-Cover` = '{covered}' WHERE `Date` = '{row[0]}' AND `TEAM_NAME` = '{row[1]}'""")
-            con.commit()
+        diff = away - home
+        covered = 1.0 if diff < line else 0.0 if diff > line else 2.0
+
+        cur.execute(f"""UPDATE `dataset_2012-23` SET `Spread` = '{line}', `Spread-Cover` = '{covered}' WHERE `Date` = '{row[0]}' AND `TEAM_NAME` = '{row[1]}'""")
+        con.commit()
 
         # if count == 1000: break
         # count += 1
@@ -82,9 +80,10 @@ def get_game(data, date, home_team, away_team):
                 away = int(data['Points'][i])
             elif team_dict[data['Opponent'][i]] == away_team:
                 home = int(data['Points'][i])
+                line = int(data['line'][i])
             
-            if home != None and away != None: return home, away
+            if home != None and away != None: return home, away, line
 
-    return None, None
+    return None, None, None
 
 add_spreads()
