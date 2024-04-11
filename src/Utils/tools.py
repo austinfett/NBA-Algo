@@ -2,6 +2,7 @@ from datetime import datetime
 import re
 import requests
 import pandas as pd
+import sqlite3
 from .Dictionaries import team_index_current
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -109,7 +110,9 @@ desc_list = [
     "possible",
     "question mark",
     "questionable",
-    "doubtful"
+    "doubtful",
+    "ruled out",
+    "unavailable"
 ]
 
 likely_list = [
@@ -134,7 +137,9 @@ unlikely_list = [
     "[Expected to miss]",
     "[Not expected to play]",
     "[Not expected]",
-    "[Doubtful]"
+    "[Doubtful]",
+    "[Ruled out]",
+    "[Unavailable]"
 ]
 
 def get_injuries():
@@ -155,33 +160,40 @@ def get_injuries():
             driver.refresh()
             WebDriverWait(driver, 8).until(EC.presence_of_element_located((By.CLASS_NAME, 'Card')))
         except TimeoutException:
+            print('Get Injuries Error')
             driver.quit()
             return []
         except WebDriverException:
+            print('Get Injuries Error')
             driver.quit()
             return []
         except MaxRetryError:
+            print('Get Injuries Error')
             driver.quit()
             return []
     except WebDriverException:
+        print('Get Injuries Error')
         driver.quit()
         return []
 
-    results = driver.find_element(By.CLASS_NAME, 'Card')
-    teams = results.find_elements(By.CLASS_NAME, 'Table__TR Table__TR--sm Table__even')
+    teams = driver.find_elements(By.CLASS_NAME, 'Table__league-injuries')
 
     injury_list = []
 
-    for players in teams:
-        p = Player()
-        p.name = players.find("a", class_="AnchorLink").text
-        p.status = players.find(class_="TextStatus").text
-        desc = players.find(class_="col-desc").text.lower()
-        for x in desc_list:
-            if x in desc:
-                p.desc = "[" + x.capitalize() + "]"
-                break
-        injury_list.append(p)
+    for team in teams:
+        body = team.find_element(By.CLASS_NAME, 'Table__TBODY')
+        players = body.find_elements(By.TAG_NAME, 'tr')
+
+        for player in players:
+            p = Player()
+            p.name = player.find_element(By.TAG_NAME, 'a').text
+            p.status = player.find_element(By.CLASS_NAME, 'TextStatus').text
+            desc = player.find_element(By.CLASS_NAME, 'col-desc').text.lower()
+            for x in desc_list:
+                if x in desc:
+                    p.desc = "[" + x.capitalize() + "]"
+                    break
+            injury_list.append(p)
 
     driver.quit()
     
@@ -232,6 +244,39 @@ team_dict = {
     "San Antonio Spurs" : "1610612759"
 }
 
+team_dict_cbs = {
+    "Boston Celtics" : "BOS",
+    "Brooklyn Nets" : "BRK",
+    "New York Knicks" : "NYK",
+    "Philadelphia 76ers" : "PHI",
+    "Toronto Raptors" : "TOR",
+    "Chicago Bulls" : "CHI",
+    "Cleveland Cavaliers" : "CLE",
+    "Detroit Pistons" : "DET",
+    "Indiana Pacers" : "IND",
+    "Milwaukee Bucks" : "MIL",
+    "Atlanta Hawks" : "ATL",
+    "Charlotte Hornets" : "CHA",
+    "Miami Heat" : "MIA",
+    "Orlando Magic" : "ORL",
+    "Washington Wizards" : "WAS",
+    "Denver Nuggets" : "DEN",
+    "Minnesota Timberwolves" : "MIN",
+    "Oklahoma City Thunder" : "OKC",
+    "Portland Trail Blazers" : "POR",
+    "Utah Jazz" : "UTA",
+    "Golden State Warriors" : "GSW",
+    "LA Clippers" : "LAC",
+    "Los Angeles Lakers" : "LAL",
+    "Phoenix Suns" : "PHO",
+    "Sacramento Kings" : "SAC",
+    "Dallas Mavericks" : "DAL",
+    "Houston Rockets" : "HOU",
+    "Memphis Grizzlies" : "MEM",
+    "New Orleans Pelicans" : "NOP",
+    "San Antonio Spurs" : "SAS"
+}
+
 def get_pie(team, injury_list=None):
     # Get current injury status of all players if not provided
     if injury_list == None:
@@ -255,15 +300,19 @@ def get_pie(team, injury_list=None):
             driver.refresh()
             WebDriverWait(driver, 8).until(EC.presence_of_element_located((By.CLASS_NAME, 'Crom_body__UYOcU')))
         except TimeoutException:
+            print('Get PIE Error:', team)
             driver.quit()
             return
         except WebDriverException:
+            print('Get PIE Error:', team)
             driver.quit()
             return
         except MaxRetryError:
+            print('Get PIE Error:', team)
             driver.quit()
             return
     except WebDriverException:
+        print('Get PIE Error:', team)
         driver.quit()
         return
 
@@ -294,7 +343,7 @@ def get_pie(team, injury_list=None):
 
     driver.quit()
 
-    return pie, pie_w
+    return pie, pie_w, total_minutes
 
 def get_roster(team):
     URL = 'https://www.nba.com/stats/team/' + team_dict[team]
@@ -310,23 +359,21 @@ def get_roster(team):
     try:
         driver = webdriver.Chrome(options=options)
         driver.get(URL)
-        WebDriverWait(driver, 8).until(EC.presence_of_element_located((By.CLASS_NAME, 'Crom_body__UYOcU')))
+        WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.CLASS_NAME, 'Crom_body__UYOcU')))
     except TimeoutException:
         try:
             driver.refresh()
-            WebDriverWait(driver, 8).until(EC.presence_of_element_located((By.CLASS_NAME, 'Crom_body__UYOcU')))
-        except TimeoutException:
+            WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.CLASS_NAME, 'Crom_body__UYOcU')))
+        except Exception as e:
+            print('Get Roster Error:', team)
+            # print(e)
             driver.quit()
-            return
-        except WebDriverException:
-            driver.quit()
-            return
-        except MaxRetryError:
-            driver.quit()
-            return
-    except WebDriverException:
+            return get_roster2(team)
+    except Exception as e:
+        print('Get Roster Error:', team)
+        # print(e)
         driver.quit()
-        return
+        return get_roster2(team)
 
     results = driver.find_element(By.CLASS_NAME, 'Crom_body__UYOcU')
     players = results.find_elements(By.TAG_NAME, 'tr')
@@ -335,5 +382,76 @@ def get_roster(team):
 
     for p in players:
         roster.append(p.find_element(By.TAG_NAME, 'td').text)
+    
+    driver.quit()
 
     return roster
+
+def get_roster2(team):
+    dashed_team = team.replace(' ', '-') if team != 'LA Clippers' else 'Los Angeles Clippers'
+    URL = f'https://www.cbssports.com/nba/teams/{team_dict_cbs[team]}/{dashed_team.lower()}/roster/'
+
+    options = webdriver.ChromeOptions()
+    options.add_argument("--no-sandbox")
+    options.add_argument("--headless=new")
+    options.add_argument("--disable-gpu")
+    options.add_argument("--diable-dve-shm-uage")
+    options.add_argument('--deny-permission-prompts')
+    options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36")
+
+    try:
+        driver = webdriver.Chrome(options=options)
+        driver.get(URL)
+        WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.CLASS_NAME, 'TableBase-table')))
+    except TimeoutException:
+        try:
+            driver.refresh()
+            WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.CLASS_NAME, 'TableBase-table')))
+        except Exception as e:
+            print('Get Roster Error:', team)
+            # print(e)
+            driver.quit()
+            return
+    except Exception as e:
+        print('Get Roster Error:', team)
+        # print(e)
+        driver.quit()
+        return
+
+    players = driver.find_elements(By.CLASS_NAME, 'CellPlayerName--long')
+
+    roster = []
+
+    for p in players:
+        roster.append(p.text)
+    
+    driver.quit()
+
+    return roster
+
+def add_to_results(date, home_team, away_team, home_odds, away_odds, home_percent, away_percent, home_ev, away_ev, bet_type, bet):
+    con = sqlite3.connect('Data/results.sqlite')
+    cur = con.cursor()
+    dataset = con.cursor()
+    found = False
+
+    for row in dataset.execute("""SELECT `Date`, `Home_Team`, `Bet_Type`, `Bet` FROM `Picks`"""):
+        if row[0] == date and row[1] == home_team and row[2] == bet_type:
+            cur.execute(f"""UPDATE `Picks` SET `Home_Odds` = '{home_odds}' WHERE `Date` = '{row[0]}' AND `Home_Team` = '{row[1]}' AND `Bet_Type` = '{row[2]}'""")
+            cur.execute(f"""UPDATE `Picks` SET `Away_Odds` = '{away_odds}' WHERE `Date` = '{row[0]}' AND `Home_Team` = '{row[1]}' AND `Bet_Type` = '{row[2]}'""")
+            cur.execute(f"""UPDATE `Picks` SET `Home_Percent` = '{format(home_percent, '.3f')}' WHERE `Date` = '{row[0]}' AND `Home_Team` = '{row[1]}' AND `Bet_Type` = '{row[2]}'""")
+            cur.execute(f"""UPDATE `Picks` SET `Away_Percent` = '{format(away_percent, '.3f')}' WHERE `Date` = '{row[0]}' AND `Home_Team` = '{row[1]}' AND `Bet_Type` = '{row[2]}'""")
+            cur.execute(f"""UPDATE `Picks` SET `Home_EV` = '{format(home_ev, '.2f')}' WHERE `Date` = '{row[0]}' AND `Home_Team` = '{row[1]}' AND `Bet_Type` = '{row[2]}'""")
+            cur.execute(f"""UPDATE `Picks` SET `Away_EV` = '{format(away_ev, '.2f')}' WHERE `Date` = '{row[0]}' AND `Home_Team` = '{row[1]}' AND `Bet_Type` = '{row[2]}'""")
+            cur.execute(f"""UPDATE `Picks` SET `Bet` = '{bet}' WHERE `Date` = '{row[0]}' AND `Home_Team` = '{row[1]}' AND `Bet_Type` = '{row[2]}'""")
+            con.commit()
+            found = True
+            break
+
+    if not found:
+        cur.execute(f"""INSERT INTO `Picks` (`Date`, `Home_Team`, `Away_Team`, `Home_Odds`, `Away_Odds`, `Home_Percent`, `Away_Percent`, `Home_EV`, `Away_EV`, `Bet_Type`, `Bet`) VALUES ('{date}', '{home_team}', '{away_team}', '{home_odds}', '{away_odds}', '{format(home_percent, '.3f')}', '{format(away_percent, '.3f')}', '{format(home_ev, '.2f')}', '{format(away_ev, '.2f')}', '{bet_type}', '{bet}')""")
+        con.commit()
+
+    dataset.close()
+    cur.close()
+    con.close()

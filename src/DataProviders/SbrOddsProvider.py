@@ -26,7 +26,7 @@ class SbrOddsProvider:
             home_team_name = game['home_team'].replace("Los Angeles Clippers", "LA Clippers")
             away_team_name = game['away_team'].replace("Los Angeles Clippers", "LA Clippers")
             
-            money_line_home_value = money_line_away_value = totals_value = None
+            money_line_home_value = money_line_away_value = totals_value = home_line = away_line = None
 
             # Get money line bet values
             if self.sportsbook in game['home_ml']:
@@ -37,10 +37,24 @@ class SbrOddsProvider:
             # Get totals bet value
             if self.sportsbook in game['total']:
                 totals_value = game['total'][self.sportsbook]
+
+            # Get spreads bet value
+            if self.sportsbook in game['home_spread']:
+                home_line = game['home_spread'][self.sportsbook]
+            if self.sportsbook in game['away_spread']:
+                away_line = game['away_spread'][self.sportsbook]
+
+            if money_line_home_value is None: money_line_home_value = input(home_team_name + ' ML: ')
+            if money_line_away_value is None: money_line_away_value = input(away_team_name + ' ML: ')
+            if totals_value is None: totals_value = input(away_team_name + ' at ' + home_team_name + ' Total: ')
+            if home_line is None: home_line = input(home_team_name + ' Spread: ')
+            if away_line is None: away_line = input(away_team_name + ' Spread: ')
             
             dict_res[home_team_name + ':' + away_team_name] =  { 
                 'under_over_odds': totals_value,
-                home_team_name: { 'money_line_odds': money_line_home_value }, 
-                away_team_name: { 'money_line_odds': money_line_away_value }
+                home_team_name: { 'money_line_odds': money_line_home_value,
+                                  'line': home_line }, 
+                away_team_name: { 'money_line_odds': money_line_away_value,
+                                  'line': away_line }
             }
         return dict_res

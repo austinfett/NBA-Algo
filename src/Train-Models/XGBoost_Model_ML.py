@@ -13,9 +13,13 @@ data = pd.read_sql_query(f"select * from \"{dataset}\"", con, index_col="index")
 con.close()
 
 margin = data['Home-Team-Win']
-data.drop(['Score', 'Home-Team-Win', 'TEAM_NAME', 'Date', 'TEAM_NAME.1', 'Date.1', 'OU-Cover', 'OU'],
+total = data['OU']
+spread = data['Spread']
+data.drop(['Score', 'Home-Team-Win', 'TEAM_NAME', 'Date', 'TEAM_NAME.1', 'Date.1', 'OU-Cover', 'OU', 'Spread-Cover', 'Spread'],
           axis=1, inplace=True)
 
+data['OU'] = np.asarray(total)
+data['Spread'] = np.asarray(spread)
 data = data.values
 
 data = data.astype(float)

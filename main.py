@@ -2,11 +2,12 @@ import argparse
 from datetime import datetime, timedelta
 
 import pandas as pd
-import tensorflow as tf
+# import tensorflow as tf
 from colorama import Fore, Style
+from sbrscrape import Scoreboard
 
 from src.DataProviders.SbrOddsProvider import SbrOddsProvider
-from src.Predict import NN_Runner, XGBoost_Runner
+from src.Predict import XGBoost_Runner
 from src.Utils.Dictionaries import team_index_current
 from src.Utils.tools import create_todays_games_from_odds, get_json_data, to_data_frame, get_todays_games_json, create_todays_games, get_injuries, get_pie
 
@@ -20,15 +21,47 @@ data_url = 'https://stats.nba.com/stats/leaguedashteamstats?' \
            'Season=2023-24&SeasonSegment=&SeasonType=Regular+Season&ShotClockRange=&' \
            'StarterBench=&TeamID=0&TwoWay=0&VsConference=&VsDivision='
 
+month_dict = {
+    1 : 31,
+    2 : 28,
+    3 : 31,
+    4 : 30,
+    5 : 31,
+    6 : 30,
+    7 : 31,
+    8 : 31,
+    9 : 30,
+    10 : 31,
+    11 : 30,
+    12 : 31
+}
+
+month_dict_leap = {
+    1 : 31,
+    2 : 29,
+    3 : 31,
+    4 : 30,
+    5 : 31,
+    6 : 30,
+    7 : 31,
+    8 : 31,
+    9 : 30,
+    10 : 31,
+    11 : 30,
+    12 : 31
+}
 
 def createTodaysGames(games, df, odds):
     match_data = []
     todays_games_uo = []
+    home_spread = []
+    away_spread = []
     home_team_odds = []
     away_team_odds = []
 
     home_team_days_rest = []
     away_team_days_rest = []
+    count = 0
 
     for game in games:
         home_team = game[0]
@@ -39,41 +72,123 @@ def createTodaysGames(games, df, odds):
             game_odds = odds[home_team + ':' + away_team]
             todays_games_uo.append(game_odds['under_over_odds'])
 
+            home_spread.append(game_odds[home_team]['line'])
+            away_spread.append(game_odds[away_team]['line'])
+
             home_team_odds.append(game_odds[home_team]['money_line_odds'])
             away_team_odds.append(game_odds[away_team]['money_line_odds'])
 
         else:
             todays_games_uo.append(input(home_team + ' vs ' + away_team + ': '))
 
+            home_spread.append(input(home_team + ' '))
+            away_spread.append(input(away_team + ' '))
+
             home_team_odds.append(input(home_team + ' odds: '))
             away_team_odds.append(input(away_team + ' odds: '))
 
         # calculate days rest for both teams
-        schedule_df = pd.read_csv('Data/nba-2023-UTC.csv', parse_dates=['Date'], date_format='%d/%m/%Y %H:%M')
-        home_games = schedule_df[(schedule_df['Home Team'] == home_team) | (schedule_df['Away Team'] == home_team)]
-        away_games = schedule_df[(schedule_df['Home Team'] == away_team) | (schedule_df['Away Team'] == away_team)]
-        previous_home_games = home_games.loc[schedule_df['Date'] <= datetime.today()].sort_values('Date',ascending=False).head(1)['Date']
-        previous_away_games = away_games.loc[schedule_df['Date'] <= datetime.today()].sort_values('Date',ascending=False).head(1)['Date']
-        if len(previous_home_games) > 0:
-            last_home_date = previous_home_games.iloc[0]
-            home_days_off = timedelta(days=1) + datetime.today() - last_home_date
+        curr_date = str(datetime.today()).split(' ')[0].split('-')
+        year = int(curr_date[0])
+        month = int(curr_date[1])
+        day = int(curr_date[2])
+        if day != 1:
+            day -= 1
         else:
-            home_days_off = timedelta(days=7)
-        if len(previous_away_games) > 0:
-            last_away_date = previous_away_games.iloc[0]
-            away_days_off = timedelta(days=1) + datetime.today() - last_away_date
-        else:
-            away_days_off = timedelta(days=7)
-        # print(f"{away_team} days off: {away_days_off.days} @ {home_team} days off: {home_days_off.days}")
+            if year % 4 == 0:
+                if month == 1:
+                    year -= 1
+                    month = 12
+                    day = month_dict_leap[month]
+                else:
+                    month -= 1
+                    day = month_dict_leap[month]
+            else:
+                if month == 1:
+                    year -= 1
+                    month = 12
+                    day = month_dict[month]
+                else:
+                    month -= 1
+                    day = month_dict[month]
+        found_previous = count_days = 0
+        home_off = away_off = None
 
-        home_team_days_rest.append(home_days_off.days)
-        away_team_days_rest.append(away_days_off.days)
+        while found_previous < 2:
+            if count_days == 14:
+                if home_off == None: home_off = count_days
+                if away_off == None: away_off = count_days
+                break
+
+            count_days += 1
+            curr_day = f'{year}-{str(month).zfill(2)}-{str(day).zfill(2)}'
+            try:
+                games = Scoreboard(sport='NBA', date=(curr_day)).games
+
+                for game in games:
+                    home_team_name = game['home_team'].replace("Los Angeles Clippers", "LA Clippers")
+                    away_team_name = game['away_team'].replace("Los Angeles Clippers", "LA Clippers")
+
+                    if home_off == None and (home_team_name == home_team or away_team_name == home_team):
+                        home_off = count_days
+                        found_previous += 1
+                    if away_off == None and (home_team_name == away_team or away_team_name == away_team):
+                        away_off = count_days
+                        found_previous += 1
+
+                if day != 1:
+                    day -= 1
+                else:
+                    if year % 4 == 0:
+                        if month == 1:
+                            year -= 1
+                            month = 12
+                            day = month_dict_leap[month]
+                        else:
+                            month -= 1
+                            day = month_dict_leap[month]
+                    else:
+                        if month == 1:
+                            year -= 1
+                            month = 12
+                            day = month_dict[month]
+                        else:
+                            month -= 1
+                            day = month_dict[month]
+                curr_day = f'{year}-{str(month).zfill(2)}-{str(day).zfill(2)}'
+            except:
+                if day != 1:
+                    day -= 1
+                else:
+                    if year % 4 == 0:
+                        if month == 1:
+                            year -= 1
+                            month = 12
+                            day = month_dict_leap[month]
+                        else:
+                            month -= 1
+                            day = month_dict_leap[month]
+                    else:
+                        if month == 1:
+                            year -= 1
+                            month = 12
+                            day = month_dict[month]
+                        else:
+                            month -= 1
+                            day = month_dict[month]
+                    curr_day = f'{year}-{str(month).zfill(2)}-{str(day).zfill(2)}'
+
+        home_team_days_rest.append(home_off)
+        away_team_days_rest.append(away_off)
         home_team_series = df.iloc[team_index_current.get(home_team)]
         away_team_series = df.iloc[team_index_current.get(away_team)]
         stats = pd.concat([home_team_series, away_team_series])
-        stats['Days-Rest-Home'] = home_days_off.days
-        stats['Days-Rest-Away'] = away_days_off.days
+        stats['Days-Rest-Home'] = home_off
+        stats['Days-Rest-Away'] = away_off
+        stats = pd.concat([stats, pd.Series({'OU':todays_games_uo[count]}), pd.Series({'Spread':home_spread[count]})])
         match_data.append(stats)
+
+        count += 1
 
     games_data_frame = pd.concat(match_data, ignore_index=True, axis=1)
     games_data_frame = games_data_frame.T
@@ -82,11 +197,12 @@ def createTodaysGames(games, df, odds):
     data = frame_ml.values
     data = data.astype(float)
 
-    return data, todays_games_uo, frame_ml, home_team_odds, away_team_odds
+    return data, todays_games_uo, home_spread, away_spread, frame_ml, home_team_odds, away_team_odds
 
 
 def main():
     odds = None
+    teams = []
     if args.odds:
         odds = SbrOddsProvider(sportsbook=args.odds).get_odds()
         games = create_todays_games_from_odds(odds)
@@ -102,39 +218,45 @@ def main():
             print(f"------------------{args.odds} odds data------------------")
             for g in odds.keys():
                 home_team, away_team = g.split(":")
-                print(f"{away_team} ({odds[g][away_team]['money_line_odds']}) @ {home_team} ({odds[g][home_team]['money_line_odds']})")
+                teams.append(home_team)
+                teams.append(away_team)
+                print(f"{away_team} ({odds[g][away_team]['money_line_odds']}) {odds[g][away_team]['line']} @ {home_team} ({odds[g][home_team]['money_line_odds']}) {odds[g][home_team]['line']}")
     else:
         data = get_todays_games_json(todays_games_url)
         games = create_todays_games(data)
     data = get_json_data(data_url)
     df = to_data_frame(data)
-
+    
     df['PIE'] = 0.0
     df['PIE_W'] = 0.0
     injury_list = get_injuries()
+    
     for i in df.index:
-        pie, pie_w = get_pie(df['TEAM_NAME'][i], injury_list)
-        df.at[i, 'PIE'] = round(pie, 1)
-        df.at[i, 'PIE_W'] = round(pie_w, 1)
+        curr_team = df['TEAM_NAME'][i]
 
-    print(df.to_string())
-    data, todays_games_uo, frame_ml, home_team_odds, away_team_odds = createTodaysGames(games, df, odds)
+        if curr_team in teams:
+            pie, pie_w, min_p = get_pie(curr_team, injury_list)
+            df.at[i, 'PIE'] = round(pie, 1)
+            df.at[i, 'PIE_W'] = round(pie_w, 1)
+
+    # print(df.to_string())
+    data, todays_games_uo, home_spread, away_spread, frame_ml, home_team_odds, away_team_odds = createTodaysGames(games, df, odds)
     if args.nn:
         print("------------Neural Network Model Predictions-----------")
-        data = tf.keras.utils.normalize(data, axis=1)
-        NN_Runner.nn_runner(data, todays_games_uo, frame_ml, games, home_team_odds, away_team_odds, args.kc)
+        # data = tf.keras.utils.normalize(data, axis=1)
+        # NN_Runner.nn_runner(data, todays_games_uo, frame_ml, games, home_team_odds, away_team_odds, args.kc)
         print("-------------------------------------------------------")
     if args.xgb:
         print("---------------XGBoost Model Predictions---------------")
-        XGBoost_Runner.xgb_runner(data, todays_games_uo, frame_ml, games, home_team_odds, away_team_odds, args.kc)
+        XGBoost_Runner.xgb_runner(data, todays_games_uo, home_spread, away_spread, frame_ml, games, home_team_odds, away_team_odds, args.kc)
         print("-------------------------------------------------------")
     if args.A:
         print("---------------XGBoost Model Predictions---------------")
-        XGBoost_Runner.xgb_runner(data, todays_games_uo, frame_ml, games, home_team_odds, away_team_odds, args.kc)
+        XGBoost_Runner.xgb_runner(data, todays_games_uo, home_spread, away_spread, frame_ml, games, home_team_odds, away_team_odds, args.kc)
         print("-------------------------------------------------------")
-        data = tf.keras.utils.normalize(data, axis=1)
+        # data = tf.keras.utils.normalize(data, axis=1)
         print("------------Neural Network Model Predictions-----------")
-        NN_Runner.nn_runner(data, todays_games_uo, frame_ml, games, home_team_odds, away_team_odds, args.kc)
+        # NN_Runner.nn_runner(data, todays_games_uo, frame_ml, games, home_team_odds, away_team_odds, args.kc)
         print("-------------------------------------------------------")
 
 
