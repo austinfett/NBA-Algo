@@ -225,6 +225,13 @@ def add_stats():
             month = split[1]
             day = split[2]
 
+            if int(year) == 2024 and int(month) >= 4 and int(month) <= 6 and int(day) >= 20:
+                segment_roster = segment + '&SeasonType=Playoffs'
+            elif int(year) == 2024 and int(month) == 4 and int(day) >= 16:
+                segment_roster = segment + '&SeasonType=PlayIn'
+            else:
+                segment_roster = segment
+
             date = row[0]
             if int(day) != 1:
                 date_before = date[:-2] + str(int(day)-1)
@@ -377,7 +384,7 @@ def add_stats():
 
                 if found == 2: break
 
-            URL = 'https://www.nba.com/stats/team/' + team_dict[row[1]] + '/players-advanced?&DateFrom=' + date + '&DateTo=' + date + '&Season=2023-24&dir=D&sort=MIN' + segment
+            URL = 'https://www.nba.com/stats/team/' + team_dict[row[1]] + '/players-advanced?&DateFrom=' + date + '&DateTo=' + date + '&Season=2023-24&dir=D&sort=MIN' + segment_roster
             
             options = webdriver.ChromeOptions()
             options.add_argument("--no-sandbox")
@@ -461,7 +468,7 @@ def add_stats():
             pie_w /= min_p
             driver.quit()
 
-            URL = 'https://www.nba.com/stats/team/' + team_dict[row[2]] + '/players-advanced?&DateFrom=' + date + '&DateTo=' + date + '&Season=2023-24&dir=D&sort=MIN' + segment
+            URL = 'https://www.nba.com/stats/team/' + team_dict[row[2]] + '/players-advanced?&DateFrom=' + date + '&DateTo=' + date + '&Season=2023-24&dir=D&sort=MIN' + segment_roster
             
             options = webdriver.ChromeOptions()
             options.add_argument("--no-sandbox")

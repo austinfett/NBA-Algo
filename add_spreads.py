@@ -1,6 +1,7 @@
 from webbrowser import get
 import pandas as pd
 import sqlite3
+from sbrscrape import Scoreboard
 
 team_dict = {
     "BOS" : "Boston Celtics",
@@ -39,8 +40,8 @@ team_dict = {
     "SAS" : "San Antonio Spurs"
 }
 
-def add_spreads():
-    spread_data = pd.read_csv('https://raw.githubusercontent.com/austinfett/ML-Capstone/main/2021_2023_Box_Scores.csv')
+def add_spreads_git():
+    spread_data = pd.read_csv('https://raw.githubusercontent.com/austinfett/ML-Capstone/main/working_spreads.csv')
 
     con = sqlite3.connect('Data/dataset.sqlite')
     cur = con.cursor()
@@ -55,13 +56,11 @@ def add_spreads():
         #     not_found += 1
         #     continue
 
-        home, away, line = get_game(spread_data, row[0], row[1], row[2])
+        result, line = get_game(spread_data, row[0], row[1].replace('Los Angeles Clippers', 'LA Clippers'))
 
-        diff = away - home
-        covered = 1.0 if diff < line else 0.0 if diff > line else 2.0
-
-        cur.execute(f"""UPDATE `dataset_2012-23` SET `Spread` = '{line}', `Spread-Cover` = '{covered}' WHERE `Date` = '{row[0]}' AND `TEAM_NAME` = '{row[1]}'""")
-        con.commit()
+        if result != None and line != None:
+            cur.execute(f"""UPDATE `dataset_2012-23` SET `Spread` = '{line}', `Spread-Cover` = '{result}' WHERE `Date` = '{row[0]}' AND `TEAM_NAME` = '{row[1]}'""")
+            con.commit()
 
         # if count == 1000: break
         # count += 1
@@ -72,18 +71,72 @@ def add_spreads():
 
     print(not_found)
 
-def get_game(data, date, home_team, away_team):
-    home = away = None
+def get_game(data, date, home_team):
+    spread_result = line = None
     for i in data.index:
-        if data['Date'][i] == date:
-            if team_dict[data['Opponent'][i]] == home_team:
-                away = int(data['Points'][i])
-            elif team_dict[data['Opponent'][i]] == away_team:
-                home = int(data['Points'][i])
-                line = int(data['line'][i])
-            
-            if home != None and away != None: return home, away, line
+        if data['date'][i] == date:
+            if team_dict[data['team'][i]] == home_team:
+                line = int(data['Line'][i])
+                spread_result = 1.0 if int(data['PointDifference'][i]) < line else 0.0 if int(data['PointDifference'][i]) > line else 2.0
+                return spread_result, line
+            elif team_dict[data['team_opp'][i]] == home_team:
+                line = -int(data['Line'][i])
+                spread_result = 1.0 if -int(data['PointDifference'][i]) < line else 0.0 if -int(data['PointDifference'][i]) > line else 2.0
+                return spread_result, line
 
-    return None, None, None
+    return None, None
 
-add_spreads()
+def add_spreads_sbr():
+    sportsbook = 'fanduel'
+
+    con = sqlite3.connect('Data/dataset.sqlite')
+    cur = con.cursor()
+    dataset = con.cursor()
+    count = 0
+
+    for row in dataset.execute("""SELECT `Date`, `TEAM_NAME`, `TEAM_NAME.1`, `Spread`, `Spread-Cover` FROM `dataset_2012-23`"""):
+        if row[3] != None and row[4] != None : continue
+
+        try:
+            games = Scoreboard(sport='NBA', date=(row[0])).games
+
+            for game in games:
+                home_team_name = game['home_team'].replace("Los Angeles Clippers", "LA Clippers")
+
+                home_score = away_score = home_line = None
+
+                # Get team scores
+                home_score = game['home_score']
+                away_score = game['away_score']
+
+                # Get spreads bet value
+                if sportsbook in game['home_spread']:
+                    home_line = game['home_spread'][sportsbook]
+
+                    spread_cover = 1 if (away_score - home_score) < home_line else 0 if (away_score - home_score) > home_line else 2
+
+                    cur.execute(f"""UPDATE `dataset_2012-23` SET `Spread` = '{home_line}', `Spread-Cover` = '{spread_cover}' WHERE `Date` = '{row[0]}' AND `TEAM_NAME` = '{home_team_name}'""")
+                    con.commit()
+        except: count += 1
+
+    dataset.close()
+    cur.close()
+    con.close()
+    print('Missing spreads: ' + str(count))
+
+def count_missing():
+    con = sqlite3.connect('Data/dataset.sqlite')
+    dataset = con.cursor()
+    count = 0
+
+    for row in dataset.execute("""SELECT `Spread` FROM `dataset_2012-23`"""):
+        if row[0] == None: count += 1
+
+    dataset.close()
+    con.close()
+
+    print('Missing spreads: ' + str(count))
+
+add_spreads_git()
+add_spreads_sbr()
+# count_missing()

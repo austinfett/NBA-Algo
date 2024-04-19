@@ -68,6 +68,7 @@ def update_picks():
         if row[5] != None:
             continue
 
+        home_points = away_points = None
         already_found = False
         for found in found_list:
             if found[0] == row[0] and found[1] == row[1]:
@@ -83,61 +84,65 @@ def update_picks():
                 home_team_name = game['home_team'].replace("Los Angeles Clippers", "LA Clippers")
 
                 if home_team_name == row[1]:
-                    # Get team scores
-                    home_points = game['home_score']
-                    away_points = game['away_score']
+                    status = game['status']
 
-                    found_list.append([row[0], row[1], home_points, away_points])
+                    if 'Final' in status:
+                        # Get team scores
+                        home_points = game['home_score']
+                        away_points = game['away_score']
+                        found_list.append([row[0], row[1], home_points, away_points])
+                    else: return
                     break
 
         results = None
 
-        if row[3] == 'ML':
-            if row[2] > 0:
-                if home_points > away_points:
-                    results = 'W'
-                else:
-                    results = 'L'
-            elif row[2] < 0:
-                if away_points > home_points:
-                    results = 'W'
-                else:
-                    results = 'L'
-        elif row[3] == 'O/U':
-            line = float(row[4].split(' ')[1])
-            if row[2] > 0:
-                if home_points + away_points > line:
-                    results = 'W'
-                elif home_points + away_points < line:
-                    results = 'L'
-                else:
-                    results = 'P'
-            elif row[2] < 0:
-                if home_points + away_points < line:
-                    results = 'W'
-                elif home_points + away_points > line:
-                    results = 'L'
-                else:
-                    results = 'P'
-        elif row[3] == 'Spread':
-            line = float(row[4].split(' ')[-1].replace('+', ''))
-            if row[2] > 0:
-                if away_points - home_points < line:
-                    results = 'W'
-                elif away_points - home_points > line:
-                    results = 'L'
-                else:
-                    results = 'P'
-            elif row[2] < 0:
-                if home_points - away_points < line:
-                    results = 'W'
-                elif home_points - away_points > line:
-                    results = 'L'
-                else:
-                    results = 'P'
+        if home_points != None and away_points != None:
+            if row[3] == 'ML':
+                if row[2] > 0:
+                    if home_points > away_points:
+                        results = 'W'
+                    else:
+                        results = 'L'
+                elif row[2] < 0:
+                    if away_points > home_points:
+                        results = 'W'
+                    else:
+                        results = 'L'
+            elif row[3] == 'O/U':
+                line = float(row[4].split(' ')[1])
+                if row[2] > 0:
+                    if home_points + away_points > line:
+                        results = 'W'
+                    elif home_points + away_points < line:
+                        results = 'L'
+                    else:
+                        results = 'P'
+                elif row[2] < 0:
+                    if home_points + away_points < line:
+                        results = 'W'
+                    elif home_points + away_points > line:
+                        results = 'L'
+                    else:
+                        results = 'P'
+            elif row[3] == 'Spread':
+                line = float(row[4].split(' ')[-1].replace('+', ''))
+                if row[2] > 0:
+                    if away_points - home_points < line:
+                        results = 'W'
+                    elif away_points - home_points > line:
+                        results = 'L'
+                    else:
+                        results = 'P'
+                elif row[2] < 0:
+                    if home_points - away_points < line:
+                        results = 'W'
+                    elif home_points - away_points > line:
+                        results = 'L'
+                    else:
+                        results = 'P'
 
-        cur.execute(f"""UPDATE `Picks` SET `Results` = '{results}' WHERE `Date` = '{row[0]}' AND `Home_Team` = '{row[1]}' AND `Bet_Type` = '{row[3]}'""")
-        con.commit()
+            cur.execute(f"""UPDATE `Picks` SET `Results` = '{results}' WHERE `Date` = '{row[0]}' AND `Home_Team` = '{row[1]}' AND `Bet_Type` = '{row[3]}'""")
+            con.commit()
 
     dataset.close()
     cur.close()
