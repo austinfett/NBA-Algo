@@ -8,11 +8,14 @@ import matplotlib.pyplot as plt
 import datetime
 
 xgb_ml = xgb.Booster()
-xgb_ml.load_model('Models/XGBoost_Models/XGBoost_70.7%_ML-4.json')
+# xgb_ml.load_model('Models/XGBoost_Models/XGBoost_70.7%_ML-4.json')
+xgb_ml.load_model('Models/XGBoost_Models/XGBoost_69.6%_ML-min.json')
 xgb_uo = xgb.Booster()
-xgb_uo.load_model('Models/XGBoost_Models/XGBoost_55.4%_UO-5.json')
+# xgb_uo.load_model('Models/XGBoost_Models/XGBoost_55.4%_UO-5.json')
+xgb_uo.load_model('Models/XGBoost_Models/XGBoost_55.4%_UO-min.json')
 xgb_spread = xgb.Booster()
-xgb_spread.load_model('Models/XGBoost_Models/XGBoost_62.9%_Spread-4.json')
+# xgb_spread.load_model('Models/XGBoost_Models/XGBoost_62.9%_Spread-4.json')
+xgb_spread.load_model('Models/XGBoost_Models/XGBoost_63.5%_Spread-min.json')
 
 def payout(odds):
     if odds > 0:
@@ -35,8 +38,8 @@ def test_season(chart=False):
         data = pd.DataFrame(row).T
         # Columns 121 and 122 are home_ml and away_ml respectively
         curr_date = data.iloc[0, 114]
-        # c = datetime.datetime(int(curr_date.split('-')[0]), int(curr_date.split('-')[1]), int(curr_date.split('-')[2]))
-        # if c < datetime.datetime(2024, 3, 12): continue
+        c = datetime.datetime(int(curr_date.split('-')[0]), int(curr_date.split('-')[1]), int(curr_date.split('-')[2]))
+        if c < datetime.datetime(2024, 3, 12): continue
         # if c != datetime.datetime(2024, 4, 6): continue
         home_win = data.iloc[0, 118]
         ou_cover = data.iloc[0, 120]
@@ -44,19 +47,31 @@ def test_season(chart=False):
         home_ml = data.iloc[0, 123]
         away_ml = data.iloc[0, 124]
         # Columns 56 and 113 are min_p and min_p.1 respectively
-        data_cleaned = data.drop(columns=[0, 1, 57, 58, 114, 117, 118, 120, 122, 123, 124, 56, 113])
+        data_cleaned = data.drop(columns=[0, 1, 57, 58, 114, 117, 118, 120, 122, 123, 124])
         
         for r in data_cleaned.values.astype(float):
             ml = xgb_ml.predict(xgb.DMatrix(np.array([r])))
             ou = xgb_uo.predict(xgb.DMatrix(np.array([r])))
             spread = xgb_spread.predict(xgb.DMatrix(np.array([r])))
 
-        ev_home = float(Expected_Value.expected_value(ml[0][1], int(home_ml)))
-        ev_away = float(Expected_Value.expected_value(ml[0][0], int(away_ml)))
-        ev_over = float(Expected_Value.expected_value(ou[0][1], -110))
-        ev_under = float(Expected_Value.expected_value(ou[0][0], -110))
-        ev_home_spread = float(Expected_Value.expected_value(spread[0][1], -110))
-        ev_away_spread = float(Expected_Value.expected_value(spread[0][0], -110))
+        try:
+            ev_home = float(Expected_Value.expected_value(ml[0][1], int(home_ml)))
+            ev_away = float(Expected_Value.expected_value(ml[0][0], int(away_ml)))
+        except:
+            ev_home = float(Expected_Value.expected_value(ml[0], -110))
+            ev_away = float(Expected_Value.expected_value(1 - ml[0], -110))
+        try:
+            ev_over = float(Expected_Value.expected_value(ou[0][1], -110))
+            ev_under = float(Expected_Value.expected_value(ou[0][0], -110))
+        except:
+            ev_over = float(Expected_Value.expected_value(ou[0], -110))
+            ev_under = float(Expected_Value.expected_value(1 - ou[0], -110))
+        try:
+            ev_home_spread = float(Expected_Value.expected_value(spread[0][1], -110))
+            ev_away_spread = float(Expected_Value.expected_value(spread[0][0], -110))
+        except:
+            ev_home_spread = float(Expected_Value.expected_value(spread[0], -110))
+            ev_away_spread = float(Expected_Value.expected_value(1 - spread[0], -110))
 
         # print(f"""({ev_home}, {ev_away}), ({ev_home_spread}, {ev_away_spread}), ({ev_over}, {ev_under})""")
 

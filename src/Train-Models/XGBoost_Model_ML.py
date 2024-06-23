@@ -7,11 +7,14 @@ from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
 
-dataset = "dataset_2012-24"
+dataset = "dataset_2012-23"
 con = sqlite3.connect("Data/dataset.sqlite")
 data = pd.read_sql_query(f"select * from \"{dataset}\"", con, index_col="index")
 con.close()
 
+data = data.fillna(-1)
+data = data[data['Spread-Cover'] != -1]
+data = data[data['OU-Cover'] != -1]
 margin = data['Home-Team-Win']
 total = data['OU']
 spread = data['Spread']
@@ -50,4 +53,4 @@ for x in tqdm(range(300)):
     acc_results.append(acc)
     # only save results if they are the best so far
     if acc == max(acc_results):
-        model.save_model('Models/XGBoost_{}%_ML-4_new.json'.format(acc))
+        model.save_model('Models/XGBoost_{}%_ML-min.json'.format(acc))

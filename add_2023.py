@@ -114,8 +114,18 @@ def add_games(init=False):
                 home_team_name = game['home_team'].replace("Los Angeles Clippers", "LA Clippers")
                 away_team_name = game['away_team'].replace("Los Angeles Clippers", "LA Clippers")
 
-                cur.execute(f"""INSERT INTO `dataset_2023-24` (`TEAM_NAME`, `TEAM_NAME.1`, `Date`, `Date.1`) VALUES ('{home_team_name}', '{away_team_name}', '{curr_day}', '{curr_day}')""")
-                con.commit()
+                year = int(curr_day.split('-')[0])
+                month = int(curr_day.split('-')[1])
+                day = int(curr_day.split('-')[2])
+
+                if year % 4 == 0:
+                    if day <= month_dict_leap[month]:
+                        cur.execute(f"""INSERT INTO `dataset_2023-24` (`TEAM_NAME`, `TEAM_NAME.1`, `Date`, `Date.1`) VALUES ('{home_team_name}', '{away_team_name}', '{curr_day}', '{curr_day}')""")
+                        con.commit()
+                else:
+                    if day <= month_dict[month]:
+                        cur.execute(f"""INSERT INTO `dataset_2023-24` (`TEAM_NAME`, `TEAM_NAME.1`, `Date`, `Date.1`) VALUES ('{home_team_name}', '{away_team_name}', '{curr_day}', '{curr_day}')""")
+                        con.commit()
         except: None
         
         if day == 31:
@@ -146,7 +156,7 @@ def add_covered(init=False):
         curr_day = f'{year}-{str(month).zfill(2)}-{str(day).zfill(2)}'
         end_day = f'{end_date[0]}-{str(end_date[1]).zfill(2)}-{str(end_date[2]).zfill(2)}'
     else:
-        for last_row in dataset.execute(f"""SELECT `Date` FROM `dataset_2023-24` ORDER BY `index` DESC LIMIT 1"""):
+        for last_row in dataset.execute(f"""SELECT `Date` FROM `dataset_2023-24` WHERE `Score` IS NULL ORDER BY `index` ASC LIMIT 1"""):
             curr_day = last_row[0]
             year = int(curr_day.split('-')[0])
             month = int(curr_day.split('-')[1])
@@ -783,11 +793,11 @@ def add_table():
 
 # start_date = [2023, 10, 27]
 # end_date = [2023, 10, 28]
-start_date = [2024, 4, 7]
-end_date = [2024, 4, 10]
+start_date = [2024, 4, 23]
+end_date = [2024, 5, 1]
 
-add_games()
-add_stats()
+# add_games()
+# add_stats()
 add_covered()
 # fix_index()
 # test_days_off()
