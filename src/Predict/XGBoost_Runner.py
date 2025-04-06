@@ -14,15 +14,16 @@ from src.Utils.tools import add_to_results
 # from src.Utils.tools import get_json_data, to_data_frame, get_todays_games_json, create_todays_games
 init()
 xgb_ml = xgb.Booster()
-xgb_ml.load_model('Models/XGBoost_Models/XGBoost_70.7%_ML-4.json')
+xgb_ml.load_model('Models/XGBoost_Models/XGBoost_69.6%_ML-min.json')
 xgb_uo = xgb.Booster()
-xgb_uo.load_model('Models/XGBoost_Models/XGBoost_55.4%_UO-5.json')
+xgb_uo.load_model('Models/XGBoost_Models/XGBoost_55.4%_UO-min.json')
 xgb_spread = xgb.Booster()
-xgb_spread.load_model('Models/XGBoost_Models/XGBoost_62.9%_Spread-4.json')
+xgb_spread.load_model('Models/XGBoost_Models/XGBoost_63.5%_Spread-min.json')
 
 
 def xgb_runner(data, todays_games_uo, home_spread, away_spread, frame_ml, games, home_team_odds, away_team_odds, kelly_criterion):
     ml_predictions_array = []
+    print(frame_ml.columns.values)
 
     for row in data:
         ml_predictions_array.append(xgb_ml.predict(xgb.DMatrix(np.array([row]))))

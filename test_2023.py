@@ -38,8 +38,8 @@ def test_season(chart=False):
         data = pd.DataFrame(row).T
         # Columns 121 and 122 are home_ml and away_ml respectively
         curr_date = data.iloc[0, 114]
-        c = datetime.datetime(int(curr_date.split('-')[0]), int(curr_date.split('-')[1]), int(curr_date.split('-')[2]))
-        if c < datetime.datetime(2024, 3, 12): continue
+        # c = datetime.datetime(int(curr_date.split('-')[0]), int(curr_date.split('-')[1]), int(curr_date.split('-')[2]))
+        # if c < datetime.datetime(2024, 3, 12): continue
         # if c != datetime.datetime(2024, 4, 6): continue
         home_win = data.iloc[0, 118]
         ou_cover = data.iloc[0, 120]

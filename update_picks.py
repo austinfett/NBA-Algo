@@ -156,11 +156,12 @@ def check_results(update=True, chart=False):
     dataset = con.cursor()
     ml_wins = ml_losses = ml_money = ou_wins = ou_losses = ou_money = spread_wins = spread_losses = spread_money = wl_wins = wl_losses = wl_money = 0
     unit_size = 100
-    day_1 = '2024-03-11'
-    daily_profit = {day_1: {'ML': 0, 'Spread': 0, 'O/U': 0, 'Total': 0}}
+    # day_1 = '2024-03-11'
+    day_1 = '2024-11-02'
+    daily_profit = {day_1: {'ML': 0, 'WL': 0,'Spread': 0, 'O/U': 0, 'Total': 0}}
 
     for row in dataset.execute("""SELECT `Date`, `Home_Team`, `Away_Team`, `Home_Odds`, `Away_Odds`, `Home_Percent`, `Away_Percent`, `Home_EV`, `Away_EV`, `Bet_Type`, `Bet`, `Results` FROM `Picks`"""):
-        if row[11] == None:
+        if row[11] == None or row[0] < day_1:
             continue
 
         if row[9] == 'ML':
@@ -188,30 +189,54 @@ def check_results(update=True, chart=False):
                 if row[11] == 'W': 
                     wl_wins += 1
                     wl_money += payout(row[3]) / 100 * unit_size
+                    daily_profit[row[0]] = daily_profit.get(row[0], {})
+                    daily_profit[row[0]]['WL'] = daily_profit.get(row[0], {}).get('WL', 0) + payout(row[3]) / 100 * unit_size
+                    daily_profit[row[0]]['Total'] = daily_profit.get(row[0], {}).get('Total', 0) + payout(row[3]) / 100 * unit_size
                 elif row[11] == 'L':
                     wl_losses += 1
                     wl_money -= unit_size
+                    daily_profit[row[0]] = daily_profit.get(row[0], {})
+                    daily_profit[row[0]]['WL'] = daily_profit.get(row[0], {}).get('WL', 0) - unit_size
+                    daily_profit[row[0]]['Total'] = daily_profit.get(row[0], {}).get('Total', 0) - unit_size
             elif row[5] > 0.5 and row[7] < 0:
                 if row[11] == 'W':
                     wl_losses += 1
                     wl_money -= unit_size
+                    daily_profit[row[0]] = daily_profit.get(row[0], {})
+                    daily_profit[row[0]]['WL'] = daily_profit.get(row[0], {}).get('WL', 0) - unit_size
+                    daily_profit[row[0]]['Total'] = daily_profit.get(row[0], {}).get('Total', 0) - unit_size
                 elif row[11] == 'L':
                     wl_wins += 1
                     wl_money += payout(row[3]) / 100 * unit_size
+                    daily_profit[row[0]] = daily_profit.get(row[0], {})
+                    daily_profit[row[0]]['WL'] = daily_profit.get(row[0], {}).get('WL', 0) + payout(row[3]) / 100 * unit_size
+                    daily_profit[row[0]]['Total'] = daily_profit.get(row[0], {}).get('Total', 0) + payout(row[3]) / 100 * unit_size
             elif row[6] > 0.5 and row[8] > 0:
                 if row[11] == 'W':
                     wl_wins += 1
                     wl_money += payout(row[4]) / 100 * unit_size
+                    daily_profit[row[0]] = daily_profit.get(row[0], {})
+                    daily_profit[row[0]]['WL'] = daily_profit.get(row[0], {}).get('WL', 0) + payout(row[4]) / 100 * unit_size
+                    daily_profit[row[0]]['Total'] = daily_profit.get(row[0], {}).get('Total', 0) + payout(row[4]) / 100 * unit_size
                 elif row[11] == 'L':
                     wl_losses += 1
                     wl_money -= unit_size
+                    daily_profit[row[0]] = daily_profit.get(row[0], {})
+                    daily_profit[row[0]]['WL'] = daily_profit.get(row[0], {}).get('WL', 0) - unit_size
+                    daily_profit[row[0]]['Total'] = daily_profit.get(row[0], {}).get('Total', 0) - unit_size
             elif row[6] > 0.5 and row[8] < 0:
                 if row[11] == 'W':
                     wl_losses += 1
                     wl_money -= unit_size
+                    daily_profit[row[0]] = daily_profit.get(row[0], {})
+                    daily_profit[row[0]]['WL'] = daily_profit.get(row[0], {}).get('WL', 0) - unit_size
+                    daily_profit[row[0]]['Total'] = daily_profit.get(row[0], {}).get('Total', 0) - unit_size
                 elif row[11] == 'L':
                     wl_wins += 1
                     wl_money += payout(row[4]) / 100 * unit_size
+                    daily_profit[row[0]] = daily_profit.get(row[0], {})
+                    daily_profit[row[0]]['WL'] = daily_profit.get(row[0], {}).get('WL', 0) + payout(row[4]) / 100 * unit_size
+                    daily_profit[row[0]]['Total'] = daily_profit.get(row[0], {}).get('Total', 0) + payout(row[4]) / 100 * unit_size
 
         elif row[9] == 'Spread':
             if row[11] == 'W':
@@ -312,18 +337,20 @@ def check_results(update=True, chart=False):
             skip_first = False
 
         ml_values = [total_profit[day]['ML'] for day in total_profit.keys()]
+        wl_values = [total_profit[day]['WL'] for day in total_profit.keys()]
         spread_values = [total_profit[day]['Spread'] for day in total_profit.keys()]
         ou_values = [total_profit[day]['O/U'] for day in total_profit.keys()]
         total_values = [total_profit[day]['Total'] for day in total_profit.keys()]
 
         plt.plot(total_profit.keys(), ml_values, marker='.', c='r', ls='--')
+        plt.plot(total_profit.keys(), wl_values, marker='.', c='orange', ls='--')
         plt.plot(total_profit.keys(), spread_values, marker='.', c='b', ls='--')
         plt.plot(total_profit.keys(), ou_values, marker='.', c='g', ls='--')
         plt.plot(total_profit.keys(), total_values, marker='.', c='purple')
         plt.xlabel('Date')
         plt.ylabel('Total Profit')
         plt.title('Pick Profit')
-        plt.legend(['ML', 'Spread', 'O/U', 'Total'], loc='upper left')
+        plt.legend(['ML', 'WL', 'Spread', 'O/U', 'Total'], loc='upper left')
         plt.show()
 
 # h_o = -420

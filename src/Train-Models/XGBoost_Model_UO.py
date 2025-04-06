@@ -3,9 +3,13 @@ import sqlite3
 import numpy as np
 import pandas as pd
 import xgboost as xgb
+import pickle
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MinMaxScaler
 from tqdm import tqdm
+
+scaler = MinMaxScaler()
 
 dataset = "dataset_2012-23"
 con = sqlite3.connect("Data/dataset.sqlite")
@@ -25,10 +29,16 @@ data['OU'] = np.asarray(total)
 data['Spread'] = np.asarray(spread)
 data = data.values
 data = data.astype(float)
+
+data_scaled = scaler.fit_transform(data)
+scaler_file = "src/Train-Models/scaler_uo.pkl"
+with open(scaler_file, "wb") as file:
+    pickle.dump(scaler, file)
+
 acc_results = []
 
 for x in tqdm(range(100)):
-    x_train, x_test, y_train, y_test = train_test_split(data, OU, test_size=.1)
+    x_train, x_test, y_train, y_test = train_test_split(data_scaled, OU, test_size=.1)
 
     train = xgb.DMatrix(x_train, label=y_train)
     test = xgb.DMatrix(x_test)
@@ -54,4 +64,4 @@ for x in tqdm(range(100)):
     acc_results.append(acc)
     # only save results if they are the best so far
     if acc == max(acc_results):
-        model.save_model('Models/XGBoost_{}%_UO-min.json'.format(acc))
+        model.save_model('Models/XGBoost_{}%_UO-scaled.json'.format(acc))

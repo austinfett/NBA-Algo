@@ -319,16 +319,11 @@ def get_pie(team, injury_list=None):
     results = driver.find_elements(By.CLASS_NAME, 'Crom_body__UYOcU')
     players = results[1].find_elements(By.TAG_NAME, 'tr')
 
-    pie = 0
-    pie_w = 0
-    total_minutes = 0
-    player_count = 8
+    pie = pie_w = min_p = net = pace = player_count = 0
     player_list = []
     roster = get_roster(team)
 
     for p in players:
-        if player_count == 0: break
-
         stats = p.find_elements(By.TAG_NAME, 'td')
         name = stats[0].text
 
@@ -336,14 +331,23 @@ def get_pie(team, injury_list=None):
             player_list.append(name)
             pie += float(stats[-1].text)
             pie_w += float(stats[-1].text) * float(stats[2].text)
-            total_minutes += float(stats[2].text)
-            player_count -= 1
+            min_p += float(stats[2].text)
+            net += float(stats[5].text)
+            pace += float(stats[-2].text)
 
-    pie_w /= total_minutes
+            player_count += 1
+
+        if player_count == 8: break
+
+    pie /= player_count
+    pie_w /= min_p
+    min_p /= player_count
+    net /= player_count
+    pace /= player_count
 
     driver.quit()
 
-    return pie, pie_w, total_minutes
+    return pie, pie_w, min_p, net, pace
 
 def get_roster(team):
     URL = 'https://www.nba.com/stats/team/' + team_dict[team]

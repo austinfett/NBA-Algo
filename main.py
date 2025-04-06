@@ -12,13 +12,20 @@ from src.Utils.Dictionaries import team_index_current
 from src.Utils.tools import create_todays_games_from_odds, get_json_data, to_data_frame, get_todays_games_json, create_todays_games, get_injuries, get_pie
 
 todays_games_url = 'https://data.nba.com/data/10s/v2015/json/mobile_teams/nba/2023/scores/00_todays_scores.json'
+
+curr_date = str(datetime.today()).split(' ')[0].split('-')
+y = int(curr_date[0])
+m = int(curr_date[1])
+if m <= 6: y -= 1
+y2 = str(y + 1)[2:]
+season = f'{y}-{y2}'
 data_url = 'https://stats.nba.com/stats/leaguedashteamstats?' \
            'Conference=&DateFrom=&DateTo=&Division=&GameScope=&' \
            'GameSegment=&LastNGames=0&LeagueID=00&Location=&' \
            'MeasureType=Base&Month=0&OpponentTeamID=0&Outcome=&' \
            'PORound=0&PaceAdjust=N&PerMode=PerGame&Period=0&' \
            'PlayerExperience=&PlayerPosition=&PlusMinus=N&Rank=N&' \
-           'Season=2023-24&SeasonSegment=&SeasonType=Regular+Season&ShotClockRange=&' \
+           f'Season={season}&SeasonSegment=&SeasonType=Regular+Season&ShotClockRange=&' \
            'StarterBench=&TeamID=0&TwoWay=0&VsConference=&VsDivision='
 
 month_dict = {
@@ -229,18 +236,25 @@ def main():
     
     df['PIE'] = 0.0
     df['PIE_W'] = 0.0
+    df['MIN_P'] = 0.0
+    df['NET'] = 0.0
+    df['PACE'] = 0.0
     injury_list = get_injuries()
     
     for i in df.index:
         curr_team = df['TEAM_NAME'][i]
 
         if curr_team in teams:
-            pie, pie_w, min_p = get_pie(curr_team, injury_list)
+            pie, pie_w, min_p, net, pace = get_pie(curr_team, injury_list)
             df.at[i, 'PIE'] = round(pie, 1)
             df.at[i, 'PIE_W'] = round(pie_w, 1)
+            df.at[i, 'MIN_P'] = round(min_p, 1)
+            df.at[i, 'NET'] = round(net, 1)
+            df.at[i, 'PACE'] = round(pace, 1)
 
-    # print(df.to_string())
+
     data, todays_games_uo, home_spread, away_spread, frame_ml, home_team_odds, away_team_odds = createTodaysGames(games, df, odds)
+    print(frame_ml)
     if args.nn:
         print("------------Neural Network Model Predictions-----------")
         # data = tf.keras.utils.normalize(data, axis=1)

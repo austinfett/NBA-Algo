@@ -458,7 +458,7 @@ def add_stats():
             soup = BeautifulSoup(driver.page_source, 'html.parser')
             results = soup.find_all(class_='Crom_body__UYOcU')[1].find_all('tr')
             
-            pie = pie_w = min_p = player_count = 0
+            pie = pie_w = min_p = net = pace = player_count = 0
 
             for r in results:
                 stats = r.find_all('td')
@@ -468,6 +468,8 @@ def add_stats():
                         pie += float(stats[-1].text)
                         pie_w += float(stats[-1].text) * float(stats[2].text)
                         min_p += float(stats[2].text)
+                        net += float(stats[5].text)
+                        pace += float(stats[-2].text)
                 
                         player_count += 1
                         break
@@ -475,7 +477,12 @@ def add_stats():
                 if player_count == 8:
                     break
 
+            pie /= player_count
             pie_w /= min_p
+            min_p /= player_count
+            net /= player_count
+            pace /= player_count
+            
             driver.quit()
 
             URL = 'https://www.nba.com/stats/team/' + team_dict[row[2]] + '/players-advanced?&DateFrom=' + date + '&DateTo=' + date + '&Season=2023-24&dir=D&sort=MIN' + segment_roster
@@ -542,7 +549,7 @@ def add_stats():
             soup = BeautifulSoup(driver.page_source, 'html.parser')
             results = soup.find_all(class_='Crom_body__UYOcU')[1].find_all('tr')
             
-            pie1 = pie_w1 = min_p1 = player_count = 0
+            pie1 = pie_w1 = min_p1 = net1 = pace1 = player_count = 0
 
             for r in results:
                 stats = r.find_all('td')
@@ -552,6 +559,8 @@ def add_stats():
                         pie1 += float(stats[-1].text)
                         pie_w1 += float(stats[-1].text) * float(stats[2].text)
                         min_p1 += float(stats[2].text)
+                        net1 += float(stats[5].text)
+                        pace1 += float(stats[-2].text)
                 
                         player_count += 1
                         break
@@ -559,7 +568,12 @@ def add_stats():
                 if player_count == 8:
                             break
 
+            pie1 /= player_count
             pie_w1 /= min_p1
+            min_p1 /= player_count
+            net1 /= player_count
+            pace1 /= player_count
+            
             driver.quit()
 
             curr_date = row[0].split('-')
@@ -652,7 +666,7 @@ def add_stats():
                                 day = month_dict[month]
                     curr_day = f'{year}-{str(month).zfill(2)}-{str(day).zfill(2)}'
 
-            cur.execute(f"""UPDATE `dataset_2023-24` SET `index` = '{index - 1}', `GP` = '{gp}', `W` = '{w}', `L` = '{l}', `W_PCT` = '{w_pct}', `MIN` = '{min}', `FGM` = '{fgm}', `FGA` = '{fga}', `FG_PCT` = '{fg_pct}', `FG3M` = '{fg3m}', `FG3A` = '{fg3a}', `FG3_PCT` = '{fg3_pct}', `FTM` = '{ftm}', `FTA` = '{fta}', `FT_PCT` = '{ft_pct}', `OREB` = '{oreb}', `DREB` = '{dreb}', `REB` = '{reb}', `AST` = '{ast}', `TOV` = '{tov}', `STL` = '{stl}', `BLK` = '{blk}', `BLKA` = '{blka}', `PF` = '{pf}', `PFD` = '{pfd}', `PTS` = '{pts}', `PLUS_MINUS` = '{plus_minus}', `GP_RANK` = '{gp_rank}', `W_RANK` = '{w_rank}', `L_RANK` = '{l_rank}', `W_PCT_RANK` = '{w_pct_rank}', `MIN_RANK` = '{min_rank}', `FGM_RANK` = '{fgm_rank}', `FGA_RANK` = '{fga_rank}', `FG_PCT_RANK` = '{fg_pct_rank}', `FG3M_RANK` = '{fg3m_rank}', `FG3A_RANK` = '{fg3a_rank}', `FG3_PCT_RANK` = '{fg3_pct_rank}', `FTM_RANK` = '{ftm_rank}', `FTA_RANK` = '{fta_rank}', `FT_PCT_RANK` = '{ft_pct_rank}', `OREB_RANK` = '{oreb_rank}', `DREB_RANK` = '{dreb_rank}', `REB_RANK` = '{reb_rank}', `AST_RANK` = '{ast_rank}', `TOV_RANK` = '{tov_rank}', `STL_RANK` = '{stl_rank}', `BLK_RANK` = '{blk_rank}', `BLKA_RANK` = '{blka_rank}', `PF_RANK` = '{pf_rank}', `PFD_RANK` = '{pfd_rank}', `PTS_RANK` = '{pts_rank}', `PLUS_MINUS_RANK` = '{plus_minus_rank}', `PIE` = '{format(pie, '.1f')}', `PIE_W` = '{format(pie_w, '.1f')}', `MIN_P` = '{format(min_p, '.1f')}', `GP.1` = '{gp1}', `W.1` = '{w1}', `L.1` = '{l1}', `W_PCT.1` = '{w_pct1}', `MIN.1` = '{min1}', `FGM.1` = '{fgm1}', `FGA.1` = '{fga1}', `FG_PCT.1` = '{fg_pct1}', `FG3M.1` = '{fg3m1}', `FG3A.1` = '{fg3a1}', `FG3_PCT.1` = '{fg3_pct1}', `FTM.1` = '{ftm1}', `FTA.1` = '{fta1}', `FT_PCT.1` = '{ft_pct1}', `OREB.1` = '{oreb1}', `DREB.1` = '{dreb1}', `REB.1` = '{reb1}', `AST.1` = '{ast1}', `TOV.1` = '{tov1}', `STL.1` = '{stl1}', `BLK.1` = '{blk1}', `BLKA.1` = '{blka1}', `PF.1` = '{pf1}', `PFD.1` = '{pfd1}', `PTS.1` = '{pts1}', `PLUS_MINUS.1` = '{plus_minus1}', `GP_RANK.1` = '{gp_rank1}', `W_RANK.1` = '{w_rank1}', `L_RANK.1` = '{l_rank1}', `W_PCT_RANK.1` = '{w_pct_rank1}', `MIN_RANK.1` = '{min_rank1}', `FGM_RANK.1` = '{fgm_rank1}', `FGA_RANK.1` = '{fga_rank1}', `FG_PCT_RANK.1` = '{fg_pct_rank1}', `FG3M_RANK.1` = '{fg3m_rank1}', `FG3A_RANK.1` = '{fg3a_rank1}', `FG3_PCT_RANK.1` = '{fg3_pct_rank1}', `FTM_RANK.1` = '{ftm_rank1}', `FTA_RANK.1` = '{fta_rank1}', `FT_PCT_RANK.1` = '{ft_pct_rank1}', `OREB_RANK.1` = '{oreb_rank1}', `DREB_RANK.1` = '{dreb_rank1}', `REB_RANK.1` = '{reb_rank1}', `AST_RANK.1` = '{ast_rank1}', `TOV_RANK.1` = '{tov_rank1}', `STL_RANK.1` = '{stl_rank1}', `BLK_RANK.1` = '{blk_rank1}', `BLKA_RANK.1` = '{blka_rank1}', `PF_RANK.1` = '{pf_rank1}', `PFD_RANK.1` = '{pfd_rank1}', `PTS_RANK.1` = '{pts_rank1}', `PLUS_MINUS_RANK.1` = '{plus_minus_rank1}', `PIE.1` = '{format(pie1, '.1f')}', `PIE_W.1` = '{format(pie_w1, '.1f')}', `MIN_P.1` = '{format(min_p1, '.1f')}', `Days-Rest-Home` = '{home_off}', `Days-Rest-Away` = '{away_off}' WHERE `Date` = '{row[0]}' AND `TEAM_NAME` = '{row[1]}'""")
+            cur.execute(f"""UPDATE `dataset_2023-24` SET `index` = '{index - 1}', `GP` = '{gp}', `W` = '{w}', `L` = '{l}', `W_PCT` = '{w_pct}', `MIN` = '{min}', `FGM` = '{fgm}', `FGA` = '{fga}', `FG_PCT` = '{fg_pct}', `FG3M` = '{fg3m}', `FG3A` = '{fg3a}', `FG3_PCT` = '{fg3_pct}', `FTM` = '{ftm}', `FTA` = '{fta}', `FT_PCT` = '{ft_pct}', `OREB` = '{oreb}', `DREB` = '{dreb}', `REB` = '{reb}', `AST` = '{ast}', `TOV` = '{tov}', `STL` = '{stl}', `BLK` = '{blk}', `BLKA` = '{blka}', `PF` = '{pf}', `PFD` = '{pfd}', `PTS` = '{pts}', `PLUS_MINUS` = '{plus_minus}', `GP_RANK` = '{gp_rank}', `W_RANK` = '{w_rank}', `L_RANK` = '{l_rank}', `W_PCT_RANK` = '{w_pct_rank}', `MIN_RANK` = '{min_rank}', `FGM_RANK` = '{fgm_rank}', `FGA_RANK` = '{fga_rank}', `FG_PCT_RANK` = '{fg_pct_rank}', `FG3M_RANK` = '{fg3m_rank}', `FG3A_RANK` = '{fg3a_rank}', `FG3_PCT_RANK` = '{fg3_pct_rank}', `FTM_RANK` = '{ftm_rank}', `FTA_RANK` = '{fta_rank}', `FT_PCT_RANK` = '{ft_pct_rank}', `OREB_RANK` = '{oreb_rank}', `DREB_RANK` = '{dreb_rank}', `REB_RANK` = '{reb_rank}', `AST_RANK` = '{ast_rank}', `TOV_RANK` = '{tov_rank}', `STL_RANK` = '{stl_rank}', `BLK_RANK` = '{blk_rank}', `BLKA_RANK` = '{blka_rank}', `PF_RANK` = '{pf_rank}', `PFD_RANK` = '{pfd_rank}', `PTS_RANK` = '{pts_rank}', `PLUS_MINUS_RANK` = '{plus_minus_rank}', `PIE` = '{format(pie, '.1f')}', `PIE_W` = '{format(pie_w, '.1f')}', `MIN_P` = '{format(min_p, '.1f')}', `NET` = '{format(net, '.1f')}', `PACE` = '{format(pace, '.1f')}', `GP.1` = '{gp1}', `W.1` = '{w1}', `L.1` = '{l1}', `W_PCT.1` = '{w_pct1}', `MIN.1` = '{min1}', `FGM.1` = '{fgm1}', `FGA.1` = '{fga1}', `FG_PCT.1` = '{fg_pct1}', `FG3M.1` = '{fg3m1}', `FG3A.1` = '{fg3a1}', `FG3_PCT.1` = '{fg3_pct1}', `FTM.1` = '{ftm1}', `FTA.1` = '{fta1}', `FT_PCT.1` = '{ft_pct1}', `OREB.1` = '{oreb1}', `DREB.1` = '{dreb1}', `REB.1` = '{reb1}', `AST.1` = '{ast1}', `TOV.1` = '{tov1}', `STL.1` = '{stl1}', `BLK.1` = '{blk1}', `BLKA.1` = '{blka1}', `PF.1` = '{pf1}', `PFD.1` = '{pfd1}', `PTS.1` = '{pts1}', `PLUS_MINUS.1` = '{plus_minus1}', `GP_RANK.1` = '{gp_rank1}', `W_RANK.1` = '{w_rank1}', `L_RANK.1` = '{l_rank1}', `W_PCT_RANK.1` = '{w_pct_rank1}', `MIN_RANK.1` = '{min_rank1}', `FGM_RANK.1` = '{fgm_rank1}', `FGA_RANK.1` = '{fga_rank1}', `FG_PCT_RANK.1` = '{fg_pct_rank1}', `FG3M_RANK.1` = '{fg3m_rank1}', `FG3A_RANK.1` = '{fg3a_rank1}', `FG3_PCT_RANK.1` = '{fg3_pct_rank1}', `FTM_RANK.1` = '{ftm_rank1}', `FTA_RANK.1` = '{fta_rank1}', `FT_PCT_RANK.1` = '{ft_pct_rank1}', `OREB_RANK.1` = '{oreb_rank1}', `DREB_RANK.1` = '{dreb_rank1}', `REB_RANK.1` = '{reb_rank1}', `AST_RANK.1` = '{ast_rank1}', `TOV_RANK.1` = '{tov_rank1}', `STL_RANK.1` = '{stl_rank1}', `BLK_RANK.1` = '{blk_rank1}', `BLKA_RANK.1` = '{blka_rank1}', `PF_RANK.1` = '{pf_rank1}', `PFD_RANK.1` = '{pfd_rank1}', `PTS_RANK.1` = '{pts_rank1}', `PLUS_MINUS_RANK.1` = '{plus_minus_rank1}', `PIE.1` = '{format(pie1, '.1f')}', `PIE_W.1` = '{format(pie_w1, '.1f')}', `MIN_P.1` = '{format(min_p1, '.1f')}', `NET.1` = '{format(net1, '.1f')}', `PACE.1` = '{format(pace1, '.1f')}', `Days-Rest-Home` = '{home_off}', `Days-Rest-Away` = '{away_off}' WHERE `Date` = '{row[0]}' AND `TEAM_NAME` = '{row[1]}'""")
             con.commit()
 
     dataset.close()
